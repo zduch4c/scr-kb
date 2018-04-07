@@ -21,17 +21,34 @@
   "The layout when shift is pressed."
   :group 'viskbd)
 
-(setf shifted-flag nil)
+(defcustom viskbd-keyboard-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [(control ?m)] 'push-button)
+    (define-key map [mouse-1] 'push-button)
+    map)
+  "Keymap used by buttons."
+  :group 'viskbd)
+
+(defvar shifted-flag nil
+  "Is the shift key pressed?")
 
 (define-button-type 'viskbd-shift
+  'keymap viskbd-keyboard-map
+  'face 'custom-button-mouse
   'action (lambda (button)
 	    (if (not shifted-flag) (progn (setf shifted-flag t) (viskbd-display-kbd layout-shifted))
 	      (progn (setf shifted-flag nil) (viskbd-display-kbd layout-regular)))))
 (define-button-type 'viskbd-return
+  'keymap viskbd-keyboard-map
+  'face 'custom-button-mouse
   'action (lambda (button) (other-window 1) (newline) (other-window -1)))
 (define-button-type 'viskbd-backspace
+  'keymap viskbd-keyboard-map
+  'face 'custom-button-mouse
   'action (lambda (button) (other-window 1) (backward-delete-char-untabify 1) (other-window -1)))
 (define-button-type 'viskbd-tab
+  'keymap viskbd-keyboard-map
+  'face 'custom-button-mouse
   'action (lambda (button) (other-window 1) (indent-for-tab-command) (other-window -1)))
 
 (defun viskbd-display-kbd (layout)
@@ -40,14 +57,16 @@
   (dolist (row layout)
     (dolist (key row)
       (define-button-type 'temporary-normal-key
-	'action (lambda (button) (other-window 1) (insert key) (other-window -1)))
+	'keymap viskbd-keyboard-map
+	'face 'custom-button-mouse
+      	'action (lambda (button) (other-window 1) (insert key) (other-window -1)))
       (cond ((= key 0) (insert "   "))
-	    ((= key 1) (insert-button "  SHIFT  " :type 'viskbd-shift :keymap viskbd-button-keymap))
+	    ((= key 1) (insert-button "  SHIFT  " :type 'viskbd-shift))
 	    ((= key ?\r) (insert-button " RET " :type 'viskbd-return))
 	    ((= key ?\s) (insert-button "                   SPC                 " :type 'temporary-normal-key))
 	    ((= key ?\b) (insert-button " BSP " :type 'viskbd-backspace))
 	    ((= key ?\t) (insert-button " TAB " :type 'viskbd-tab))
-	    (t (insert-button (format " %c " key) :type 'temporary-normal-key))))
+	    (t (insert-button (format " %c " key) :type 'temporary-normal-key :face 'custom-button))))
     (insert "\n"))
   (when (not buffer-read-only) (setf buffer-read-only t)))
 
